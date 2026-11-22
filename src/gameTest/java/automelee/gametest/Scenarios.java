@@ -53,7 +53,10 @@ final class Scenarios {
             Scenarios::betterSurvivalSpearHold),
         new Scenario(
             "BetterSurvival nunchaku hold leaves its own loop in charge",
-            Scenarios::betterSurvivalNunchakuHold));
+            Scenarios::betterSurvivalNunchakuHold),
+        new Scenario(
+            "BetterSurvival dagger, axe and hammer holds land full-strength hits in that order",
+            Scenarios::betterSurvivalMeleeHolds));
   }
 
   private static String swordHold(Harness h) throws Exception {
@@ -345,6 +348,30 @@ final class Scenarios {
         fromAutoMelee == 0,
         fromAutoMelee + " hits came from Auto Melee while holding the nunchaku");
     return hits.size() + " nunchaku loop hits in 5 s, none from Auto Melee";
+  }
+
+  private static String betterSurvivalMeleeHolds(Harness h) throws Exception {
+    int dagger = betterSurvivalHold(h, "itemirondagger");
+    int axe = betterSurvivalHold(h, "itemironbattleaxe");
+    int hammer = betterSurvivalHold(h, "itemironhammer");
+    h.check(
+        dagger > axe && axe > hammer,
+        "dagger " + dagger + " hits, battle axe " + axe + ", hammer " + hammer);
+    return "dagger " + dagger + ", battle axe " + axe + ", hammer " + hammer + " hits in 5 s";
+  }
+
+  /** Holds attack at a pig for 5 s with the named BetterSurvival weapon and returns its hits. */
+  private static int betterSurvivalHold(Harness h, String name) throws Exception {
+    h.prepare(betterSurvival(name));
+    h.spawnAimedPig();
+    int start = h.tick();
+    holdFor(h, HOLD_TICKS);
+    List<Hit> hits = h.hitsFrom(start);
+    h.check(hits.size() >= 3, name + " landed only " + hits.size() + " hits in 5 s");
+    h.check(autoMeleeHits(hits) == hits.size(), name + " hits did not all come from Auto Melee");
+    float weakest = weakest(hits);
+    h.check(weakest >= FULL, name + " landed a hit at strength " + weakest);
+    return hits.size();
   }
 
   private static Item betterSurvival(String name) {
