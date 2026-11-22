@@ -1,6 +1,8 @@
 package automelee;
 
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 
 @Mod(
     modid = "automelee",
@@ -8,4 +10,10 @@ import net.minecraftforge.fml.common.Mod;
     version = Tags.VERSION,
     clientSideOnly = true,
     acceptableRemoteVersions = "*")
-public final class AutoMelee {}
+public final class AutoMelee {
+
+  @Mod.EventHandler
+  public void init(FMLInitializationEvent event) {
+    MinecraftForge.EVENT_BUS.register(new ClientTickHandler());
+  }
+}
