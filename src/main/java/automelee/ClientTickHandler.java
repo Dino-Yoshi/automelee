@@ -2,6 +2,8 @@ package automelee;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.settings.GameSettings;
+import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.Entity;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -24,7 +26,7 @@ public final class ClientTickHandler {
     Snapshot snapshot =
         Snapshot.builder()
             .meleeItem(MeleeItems.isMelee(player.getHeldItemMainhand().getItem()))
-            .attackKeyHeld(mc.gameSettings.keyBindAttack.isKeyDown())
+            .attackKeyHeld(isHeld(mc.gameSettings.keyBindAttack))
             .usingItem(player.isHandActive())
             .rowing(player.isRowingBoat())
             .guiOpen(mc.currentScreen != null)
@@ -38,5 +40,13 @@ public final class ClientTickHandler {
     if (AttackDecision.shouldAttack(snapshot)) {
       AttackDispatcher.attack(mc, player, target);
     }
+  }
+
+  /**
+   * RLCombat cancels the mouse event when a click lands on an entity, so the binding is never
+   * marked as held. Read the physical button as well.
+   */
+  private static boolean isHeld(KeyBinding key) {
+    return key.isKeyDown() || GameSettings.isKeyDown(key);
   }
 }
