@@ -6,6 +6,7 @@ import java.util.List;
 import net.minecraft.init.Items;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameType;
 
 /** The scenario list. Each scenario prepares the arena itself, so they can run in any order. */
 final class Scenarios {
@@ -15,6 +16,12 @@ final class Scenarios {
 
   /** Two seconds. */
   private static final int QUIET_TICKS = 40;
+
+  /** Eating takes 32 ticks, so this stays inside one meal. */
+  private static final int EAT_SAMPLE_TICKS = 20;
+
+  /** Three seconds, for hits to resume after a pause. */
+  private static final int RESUME_TICKS = 60;
 
   /** Tolerance for a cooldown that reads as full. */
   private static final float FULL = 0.999F;
@@ -30,7 +37,11 @@ final class Scenarios {
         new Scenario("single press lands exactly one hit", Scenarios::singlePress),
         new Scenario("release stops further hits", Scenarios::releaseStops),
         new Scenario("aiming at air lands no hits", Scenarios::airAim),
-        new Scenario("aiming at a block mines without attacks", Scenarios::blockAim));
+        new Scenario("aiming at a block mines without attacks", Scenarios::blockAim),
+        new Scenario("eating in the off-hand lands no hits until it stops", Scenarios::eating),
+        new Scenario("blocking with a shield lands no hits", Scenarios::shieldBlock),
+        new Scenario("open inventory lands no hits until it closes", Scenarios::inventory),
+        new Scenario("spectator mode lands no hits", Scenarios::spectator));
   }
 
   private static String swordHold(Harness h) throws Exception {
@@ -150,6 +161,112 @@ final class Scenarios {
     int hits = h.hitsFrom(start).size();
     h.check(hits == 0, hits + " hits while mining");
     return "dirt broke after " + broke + " ticks, no attacks";
+  }
+
+  private static String eating(Harness h) throws Exception {
+    h.prepare(Items.IRON_SWORD);
+    h.giveOffhand(Items.COOKED_BEEF);
+    h.setFoodLevel(2);
+    h.spawnAimedPig();
+    h.holdAttack(true);
+    h.holdUse(true);
+    h.awaitUntil(
+        "eating to start (setup: the off-hand food was not used)",
+        false,
+        () -> h.isHandActive(),
+        20);
+    int start = h.tick();
+    for (int i = 0; i < EAT_SAMPLE_TICKS; i++) {
+      h.awaitTicks(1);
+      h.check(h.isHandActive(), "eating ended " + i + " ticks in, while use was still held");
+    }
+    List<Hit> during = h.hitsFrom(start);
+    h.check(during.isEmpty(), "landed " + during.size() + " hits while eating");
+
+    h.holdUse(false);
+    h.awaitUntil("eating to stop after release", false, () -> !h.isHandActive(), 60);
+    int resume = h.tick();
+    h.awaitTicks(RESUME_TICKS);
+    int after = h.hitsFrom(resume).size();
+    h.holdAttack(false);
+    h.check(after >= 1, "no hits in 3 s after eating stopped");
+    return "0 hits in " + EAT_SAMPLE_TICKS + " ticks of eating, " + after + " hits in 3 s after";
+  }
+
+  private static String shieldBlock(Harness h) throws Exception {
+    h.prepare(Items.IRON_SWORD);
+    h.giveOffhand(Items.SHIELD);
+    h.spawnAimedPig();
+    h.holdAttack(true);
+    int before = h.tick();
+    h.awaitTicks(QUIET_TICKS);
+    int unblocked = h.hitsFrom(before).size();
+    h.check(unblocked >= 1, "no hits before blocking, so the setup is not working");
+
+    h.holdUse(true);
+    h.awaitUntil(
+        "the shield to block (setup: the shield was not raised)", false, () -> h.isBlocking(), 20);
+    int start = h.tick();
+    for (int i = 0; i < EAT_SAMPLE_TICKS; i++) {
+      h.awaitTicks(1);
+      h.check(h.isBlocking(), "stopped blocking " + i + " ticks in, while use was still held");
+    }
+    List<Hit> blocked = h.hitsFrom(start);
+    h.holdUse(false);
+    h.holdAttack(false);
+    h.check(blocked.isEmpty(), "landed " + blocked.size() + " hits while blocking");
+    return "0 hits in " + EAT_SAMPLE_TICKS + " ticks of blocking, " + unblocked + " before";
+  }
+
+  private static String inventory(Harness h) throws Exception {
+    h.prepare(Items.IRON_SWORD);
+    h.spawnAimedPig();
+    h.holdAttack(true);
+    int before = h.tick();
+    h.awaitTicks(QUIET_TICKS);
+    int open = h.hitsFrom(before).size();
+    h.check(open >= 1, "no hits before opening the inventory, so the setup is not working");
+
+    h.openInventory();
+    h.awaitInventory(true);
+    // Opening a screen releases every key, so attack is pressed again after it opens. Vanilla
+    // reports attack as not held inside a screen anyway, so this only shows no hit gets through.
+    h.holdAttack(true);
+    int start = h.tick();
+    h.awaitTicks(HOLD_TICKS);
+    h.check(h.inventoryOpen(), "the inventory closed by itself");
+    int whileOpen = h.hitsFrom(start).size();
+    h.check(whileOpen == 0, whileOpen + " hits while the inventory was open");
+
+    h.closeInventory();
+    h.awaitInventory(false);
+    h.holdAttack(true);
+    int resume = h.tick();
+    h.awaitTicks(RESUME_TICKS);
+    int after = h.hitsFrom(resume).size();
+    h.holdAttack(false);
+    h.check(after >= 1, "no hits in 3 s after closing the inventory");
+    return "0 hits in 5 s with the inventory open, " + after + " hits in 3 s after closing";
+  }
+
+  private static String spectator(Harness h) throws Exception {
+    h.prepare(Items.IRON_SWORD);
+    int pig = h.spawnAimedPig();
+    h.holdAttack(true);
+    int before = h.tick();
+    h.awaitTicks(QUIET_TICKS);
+    int survival = h.hitsFrom(before).size();
+    h.check(survival >= 1, "no hits in survival, so the setup is not working");
+
+    h.setGameType(GameType.SPECTATOR);
+    h.awaitSpectator(true);
+    h.awaitAimAtEntity(pig);
+    int start = h.tick();
+    h.awaitTicks(HOLD_TICKS);
+    int hits = h.hitsFrom(start).size();
+    h.holdAttack(false);
+    h.check(hits == 0, hits + " hits in spectator mode");
+    return "0 hits in 5 s in spectator mode, " + survival + " in 2 s of survival";
   }
 
   /** Holds attack for the given number of ticks, then releases it. */
