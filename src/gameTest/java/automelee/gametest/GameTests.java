@@ -2,6 +2,7 @@ package automelee.gametest;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraftforge.client.event.MouseEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -22,9 +23,17 @@ public final class GameTests {
 
   @Mod.EventHandler
   public void init(FMLInitializationEvent event) {
-    Minecraft.getMinecraft().gameSettings.pauseOnLostFocus = false;
+    Minecraft mc = Minecraft.getMinecraft();
+    mc.gameSettings.pauseOnLostFocus = false;
+    mc.mouseHelper = new StillMouse();
     MinecraftForge.EVENT_BUS.register(this);
     MinecraftForge.EVENT_BUS.register(harness.attacks());
+  }
+
+  /** Real clicks would count as attacks, so the suite drives the attack key on its own. */
+  @SubscribeEvent
+  public void onMouse(MouseEvent event) {
+    event.setCanceled(true);
   }
 
   @SubscribeEvent
