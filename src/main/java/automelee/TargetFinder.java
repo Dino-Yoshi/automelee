@@ -13,9 +13,9 @@ final class TargetFinder {
   private TargetFinder() {}
 
   static Entity find(Minecraft mc, EntityPlayer player) {
-    return Loader.isModLoaded(REACHFIX_ID)
-        ? ReachFixTargets.pointed(mc, player)
-        : vanillaTarget(mc);
+    Entity target =
+        Loader.isModLoaded(REACHFIX_ID) ? ReachFixTargets.pointed(mc, player) : vanillaTarget(mc);
+    return IceAndFireParts.resolve(target);
   }
 
   private static Entity vanillaTarget(Minecraft mc) {
