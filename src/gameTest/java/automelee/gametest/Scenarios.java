@@ -41,7 +41,9 @@ final class Scenarios {
         new Scenario("eating in the off-hand lands no hits until it stops", Scenarios::eating),
         new Scenario("blocking with a shield lands no hits", Scenarios::shieldBlock),
         new Scenario("open inventory lands no hits until it closes", Scenarios::inventory),
-        new Scenario("spectator mode lands no hits", Scenarios::spectator));
+        new Scenario("spectator mode lands no hits", Scenarios::spectator),
+        new Scenario(
+            "holding use with a sword in the off-hand lands no hits", Scenarios::offhandUse));
   }
 
   private static String swordHold(Harness h) throws Exception {
@@ -269,6 +271,19 @@ final class Scenarios {
     h.holdAttack(false);
     h.check(hits == 0, hits + " hits in spectator mode");
     return "0 hits in 5 s in spectator mode, " + survival + " in 2 s of survival";
+  }
+
+  private static String offhandUse(Harness h) throws Exception {
+    h.prepare(Items.IRON_PICKAXE);
+    h.giveOffhand(Items.IRON_SWORD);
+    h.spawnAimedPig();
+    int start = h.tick();
+    h.holdUse(true);
+    h.awaitTicks(HOLD_TICKS);
+    h.holdUse(false);
+    int hits = h.hitsFrom(start).size();
+    h.check(hits == 0, hits + " hits while holding use with a sword in the off-hand");
+    return "0 hits in 5 s of holding use with a sword in the off-hand";
   }
 
   /** Holds attack for the given number of ticks, then releases it. */
