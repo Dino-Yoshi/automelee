@@ -94,6 +94,8 @@ tasks.register('runGameTests', JavaExec) {
     description = 'Runs the in-game scenarios in a dev client and fails when one fails.'
     dependsOn tasks.named('gameTestClasses')
     dependsOn { tasks.named('runClient').get().dependsOn }
+    // The client classpath includes the launcher jar, which only this task builds.
+    dependsOn tasks.named('packageMcLauncher')
     ignoreExitValue = false
     def reportFile = layout.buildDirectory.file('game-tests/report.txt')
     def gameDir = layout.projectDirectory.dir('run/game-tests')

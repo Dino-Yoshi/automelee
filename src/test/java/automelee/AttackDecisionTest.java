@@ -43,11 +43,41 @@ class AttackDecisionTest {
     assertFalse(AttackDecision.shouldAttack(attackable().targetLivingAndNotSelf(false).build()));
   }
 
+  @Test
+  void doesNotAttackWhileUsingAnItem() {
+    assertFalse(AttackDecision.shouldAttack(attackable().usingItem(true).build()));
+  }
+
+  @Test
+  void doesNotAttackWhileRowing() {
+    assertFalse(AttackDecision.shouldAttack(attackable().rowing(true).build()));
+  }
+
+  @Test
+  void doesNotAttackWhileAGuiIsOpen() {
+    assertFalse(AttackDecision.shouldAttack(attackable().guiOpen(true).build()));
+  }
+
+  @Test
+  void doesNotAttackInSpectatorMode() {
+    assertFalse(AttackDecision.shouldAttack(attackable().spectator(true).build()));
+  }
+
+  @Test
+  void doesNotAttackWhenDead() {
+    assertFalse(AttackDecision.shouldAttack(attackable().alive(false).build()));
+  }
+
   /** A snapshot where every rule would attack, so each test can break exactly one. */
   private static Snapshot.Builder attackable() {
     return Snapshot.builder()
         .meleeItem(true)
         .attackKeyHeld(true)
+        .usingItem(false)
+        .rowing(false)
+        .guiOpen(false)
+        .spectator(false)
+        .alive(true)
         .cooledStrength(1.0F)
         .targetPresent(true)
         .targetLivingAndNotSelf(true);

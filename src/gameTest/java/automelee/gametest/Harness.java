@@ -12,6 +12,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.SharedMonsterAttributes;
@@ -174,7 +175,7 @@ final class Harness {
 
   /** Clears the arena, teleports the player to it, and releases all input. */
   void resetArena() throws Exception {
-    releaseAttackKey();
+    releaseInputs();
     onServer(
         () -> {
           WorldServer world = world();
@@ -197,6 +198,9 @@ final class Harness {
         false,
         () -> Minecraft.getMinecraft().player.getDistanceSq(0.5D, groundY, 0.5D) < 0.01D,
         100);
+    setGameType(GameType.SURVIVAL);
+    awaitSpectator(false);
+    setFoodLevel(20);
   }
 
   /** Arena reset, then the item in the main hand and a full attack cooldown. */
@@ -398,18 +402,118 @@ final class Harness {
     return onClient(() -> attacks.since(tick));
   }
 
-  private void releaseAttackKey() throws Exception {
+  private void releaseInputs() throws Exception {
     onClient(
         () -> {
+          Minecraft mc = Minecraft.getMinecraft();
           KeyBinding.setKeyBindState(attackKey(), false);
+          KeyBinding.setKeyBindState(useKey(), false);
+          if (mc.currentScreen instanceof GuiInventory) {
+            mc.displayGuiScreen(null);
+          }
           return null;
         });
+  }
+
+  void giveOffhand(Item item) throws Exception {
+    onServer(
+        () -> {
+          serverPlayer().inventory.offHandInventory.set(0, new ItemStack(item));
+          return null;
+        });
+    awaitUntil(
+        "the client to hold " + item.getRegistryName() + " in the off-hand",
+        false,
+        () -> Minecraft.getMinecraft().player.getHeldItemOffhand().getItem() == item,
+        100);
+  }
+
+  void setFoodLevel(int level) throws Exception {
+    onServer(
+        () -> {
+          serverPlayer().getFoodStats().setFoodLevel(level);
+          return null;
+        });
+    onClient(
+        () -> {
+          Minecraft.getMinecraft().player.getFoodStats().setFoodLevel(level);
+          return null;
+        });
+  }
+
+  void setGameType(GameType type) throws Exception {
+    onServer(
+        () -> {
+          serverPlayer().setGameType(type);
+          return null;
+        });
+  }
+
+  void awaitSpectator(boolean spectator) throws Exception {
+    awaitUntil(
+        spectator ? "the client to enter spectator mode" : "the client to leave spectator mode",
+        false,
+        () -> Minecraft.getMinecraft().player.isSpectator() == spectator,
+        100);
+  }
+
+  /** Right-click. Pressing down also starts one use, the way a real click does. */
+  void holdUse(boolean down) throws Exception {
+    onClient(
+        () -> {
+          KeyBinding.setKeyBindState(useKey(), down);
+          if (down) {
+            KeyBinding.onTick(useKey());
+          }
+          return null;
+        });
+  }
+
+  void openInventory() throws Exception {
+    onClient(
+        () -> {
+          Minecraft mc = Minecraft.getMinecraft();
+          mc.displayGuiScreen(new GuiInventory(mc.player));
+          return null;
+        });
+  }
+
+  void closeInventory() throws Exception {
+    onClient(
+        () -> {
+          Minecraft.getMinecraft().displayGuiScreen(null);
+          return null;
+        });
+  }
+
+  void awaitInventory(boolean open) throws Exception {
+    awaitUntil(
+        open ? "the inventory to open" : "the inventory to close",
+        false,
+        () -> (Minecraft.getMinecraft().currentScreen instanceof GuiInventory) == open,
+        60);
+  }
+
+  boolean isHandActive() throws Exception {
+    return onClient(() -> Minecraft.getMinecraft().player.isHandActive());
+  }
+
+  boolean isBlocking() throws Exception {
+    return onClient(() -> Minecraft.getMinecraft().player.isActiveItemStackBlocking());
+  }
+
+  boolean inventoryOpen() throws Exception {
+    return onClient(() -> Minecraft.getMinecraft().currentScreen instanceof GuiInventory);
   }
 
   // Helpers.
 
   private static int attackKey() {
     return Minecraft.getMinecraft().gameSettings.keyBindAttack.getKeyCode();
+  }
+
+  private static int useKey() {
+    return Minecraft.getMinecraft().gameSettings.keyBindUseItem.getKeyCode();
   }
 
   private List<BlockPos> arenaBlocks() {

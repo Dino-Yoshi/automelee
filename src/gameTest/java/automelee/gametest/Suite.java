@@ -7,7 +7,7 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 /** Creates the test world, runs every scenario, writes the report and exits the JVM. */
 final class Suite {
 
-  private static final long TIME_LIMIT_MS = 180_000L;
+  private static final long TIME_LIMIT_MS = 420_000L;
   private static final String ONLY_PROPERTY = "automelee.gameTestOnly";
   private static final String REPEAT_PROPERTY = "automelee.gameTestRepeat";
   private static final String WORLD_NAME = "automelee-gametest";
