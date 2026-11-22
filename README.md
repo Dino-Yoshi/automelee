@@ -31,3 +31,11 @@ looks upward from the project for a `minecraft/mods` folder, or uses
   tests.
 - `./gradlew runGameTests` runs the in-game scenarios in a dev client.
   It needs a display.
+
+## License
+
+Copyright (C) 2026 Dino-Yoshi
+
+Auto Melee is free software under the GNU Lesser General Public
+License, version 3 or any later version. See `COPYING.LESSER`, and
+`COPYING` for the GNU General Public License it builds on.
