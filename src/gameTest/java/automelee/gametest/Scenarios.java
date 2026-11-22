@@ -2,7 +2,6 @@ package automelee.gametest;
 
 import automelee.gametest.AttackLog.Hit;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import net.minecraft.init.Items;
 import net.minecraft.util.math.BlockPos;
@@ -23,7 +22,15 @@ final class Scenarios {
   private Scenarios() {}
 
   static List<Scenario> all() {
-    return Collections.emptyList();
+    return Arrays.asList(
+        new Scenario("sword hold repeats full-strength hits", Scenarios::swordHold),
+        new Scenario("faster sword outpaces slower axe", Scenarios::swordOutpacesAxe),
+        new Scenario("pickaxe hold lands no hits", Scenarios::pickaxeHold),
+        new Scenario("item frame and armor stand are not attacked", Scenarios::frameAndStand),
+        new Scenario("single press lands exactly one hit", Scenarios::singlePress),
+        new Scenario("release stops further hits", Scenarios::releaseStops),
+        new Scenario("aiming at air lands no hits", Scenarios::airAim),
+        new Scenario("aiming at a block mines without attacks", Scenarios::blockAim));
   }
 
   private static String swordHold(Harness h) throws Exception {
