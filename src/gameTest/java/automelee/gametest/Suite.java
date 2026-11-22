@@ -8,6 +8,8 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 final class Suite {
 
   private static final long TIME_LIMIT_MS = 180_000L;
+  private static final String ONLY_PROPERTY = "automelee.gameTestOnly";
+  private static final String REPEAT_PROPERTY = "automelee.gameTestRepeat";
   private static final String WORLD_NAME = "automelee-gametest";
   private static final String REPORT_PROPERTY = "automelee.gameTestReport";
   private static final String DEFAULT_REPORT = "build/game-tests/report.txt";
@@ -31,8 +33,12 @@ final class Suite {
       harness.launchWorld(WORLD_NAME);
       harness.awaitWorld();
       harness.prepareWorld();
-      for (Scenario scenario : Scenarios.all()) {
-        runScenario(scenario);
+      for (int round = 0; round < repeat(); round++) {
+        for (Scenario scenario : Scenarios.all()) {
+          if (selected(scenario)) {
+            runScenario(scenario);
+          }
+        }
       }
       finish(report.failed() == 0 ? 0 : 1);
     } catch (Exception e) {
@@ -53,12 +59,12 @@ final class Suite {
 
   private void watch() {
     try {
-      Thread.sleep(TIME_LIMIT_MS);
+      Thread.sleep(TIME_LIMIT_MS * repeat());
     } catch (InterruptedException e) {
       return;
     }
     if (!finished.get()) {
-      report.fail("suite", "timed out after 180 s");
+      report.fail("suite", "timed out after " + TIME_LIMIT_MS * repeat() / 1000 + " s");
       finish(2);
     }
   }
@@ -69,6 +75,24 @@ final class Suite {
     }
     report.write();
     FMLCommonHandler.instance().exitJava(code, false);
+  }
+
+  /** Scenarios whose name contains one of the comma-separated filters, or all without a filter. */
+  private static boolean selected(Scenario scenario) {
+    String only = System.getProperty(ONLY_PROPERTY, "");
+    if (only.isEmpty()) {
+      return true;
+    }
+    for (String filter : only.split(",")) {
+      if (scenario.name.contains(filter.trim())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static int repeat() {
+    return Math.max(1, Integer.getInteger(REPEAT_PROPERTY, 1));
   }
 
   private static Thread daemon(Runnable task, String name) {

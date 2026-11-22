@@ -106,6 +106,12 @@ tasks.register('runGameTests', JavaExec) {
         args = client.calculateArgs()
         def props = client.systemProperties.collect { key, value -> "-D${key}=${value}" }
         jvmArgs = client.calculateJvmArgs() + props + ["-Dautomelee.gameTestReport=${reportFile.get().asFile.absolutePath}"]
+        // -PgameTestOnly=<name,...> and -PgameTestRepeat=<n> narrow the run while chasing a failure
+        ['gameTestOnly', 'gameTestRepeat'].each { name ->
+            if (project.hasProperty(name)) {
+                jvmArgs "-Dautomelee.${name}=${project.property(name)}"
+            }
+        }
         workingDir = gameDir.asFile
     }
 }
