@@ -11,6 +11,9 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 /** Records every attack the local player starts, with the cooldown it had at that moment. */
 final class AttackLog {
 
+  /** Named as text so the game test does not compile against Auto Melee's internals. */
+  private static final String AUTO_MELEE_DISPATCHER = "automelee.AttackDispatcher";
+
   private final AtomicInteger ticks;
   private final List<Hit> hits = new ArrayList<>();
 
@@ -24,15 +27,25 @@ final class AttackLog {
     if (!player.world.isRemote || player != Minecraft.getMinecraft().player) {
       return;
     }
+    boolean fromAutoMelee = calledFromAutoMelee();
     synchronized (hits) {
       hits.add(
           new Hit(
               ticks.get(),
               player.getCooledAttackStrength(0.5F),
-              event.getTarget().getClass().getSimpleName()
-                  + "#"
-                  + event.getTarget().getEntityId()));
+              event.getTarget().getClass().getSimpleName() + "#" + event.getTarget().getEntityId(),
+              fromAutoMelee));
     }
+  }
+
+  /** Auto Melee attacks only through its dispatcher, which is on the stack when the event fires. */
+  private static boolean calledFromAutoMelee() {
+    for (StackTraceElement frame : Thread.currentThread().getStackTrace()) {
+      if (frame.getClassName().equals(AUTO_MELEE_DISPATCHER)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** Hits from the given client tick onward. */
@@ -52,11 +65,13 @@ final class AttackLog {
     final int tick;
     final float strength;
     final String target;
+    final boolean fromAutoMelee;
 
-    Hit(int tick, float strength, String target) {
+    Hit(int tick, float strength, String target, boolean fromAutoMelee) {
       this.tick = tick;
       this.strength = strength;
       this.target = target;
+      this.fromAutoMelee = fromAutoMelee;
     }
   }
 }

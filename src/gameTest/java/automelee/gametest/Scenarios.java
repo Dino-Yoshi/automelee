@@ -4,6 +4,7 @@ import automelee.gametest.AttackLog.Hit;
 import java.util.Arrays;
 import java.util.List;
 import net.minecraft.init.Items;
+import net.minecraft.item.Item;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameType;
@@ -46,7 +47,13 @@ final class Scenarios {
             "holding use with a sword in the off-hand lands no hits", Scenarios::offhandUse),
         new Scenario(
             "attack and use with swords in both hands keep full-strength hits",
-            Scenarios::dualSwordAttackAndUse));
+            Scenarios::dualSwordAttackAndUse),
+        new Scenario(
+            "BetterSurvival spear hold lands no hits and keeps the spear",
+            Scenarios::betterSurvivalSpearHold),
+        new Scenario(
+            "BetterSurvival nunchaku hold leaves its own loop in charge",
+            Scenarios::betterSurvivalNunchakuHold));
   }
 
   private static String swordHold(Harness h) throws Exception {
@@ -304,6 +311,52 @@ final class Scenarios {
     float weakest = weakest(hits);
     h.check(weakest >= FULL, "a hit landed at strength " + weakest);
     return hits.size() + " hits in 5 s, weakest strength " + format(weakest);
+  }
+
+  private static String betterSurvivalSpearHold(Harness h) throws Exception {
+    Item spear = betterSurvival("itemironspear");
+    h.prepare(spear);
+    h.spawnAimedPig();
+    int start = h.tick();
+    holdFor(h, HOLD_TICKS);
+    List<Hit> hits = h.hitsFrom(start);
+    h.check(hits.isEmpty(), "landed " + targets(hits) + " while holding attack with a spear");
+    h.check(h.heldItem() == spear, "the spear left the main hand");
+    return "0 hits in 5 s with an iron spear, still in the main hand";
+  }
+
+  private static String betterSurvivalNunchakuHold(Harness h) throws Exception {
+    // Control: a sword's hits come through Auto Melee, which shows the tag below can see them.
+    h.prepare(Items.IRON_SWORD);
+    h.spawnAimedPig();
+    int control = h.tick();
+    holdFor(h, QUIET_TICKS);
+    long viaAutoMelee = autoMeleeHits(h.hitsFrom(control));
+    h.check(viaAutoMelee >= 1, "the control sword made no Auto Melee hits");
+
+    h.prepare(betterSurvival("itemironnunchaku"));
+    h.spawnAimedPig();
+    int start = h.tick();
+    holdFor(h, HOLD_TICKS);
+    List<Hit> hits = h.hitsFrom(start);
+    h.check(hits.size() >= 3, "the nunchaku loop landed only " + hits.size() + " hits in 5 s");
+    long fromAutoMelee = autoMeleeHits(hits);
+    h.check(
+        fromAutoMelee == 0,
+        fromAutoMelee + " hits came from Auto Melee while holding the nunchaku");
+    return hits.size() + " nunchaku loop hits in 5 s, none from Auto Melee";
+  }
+
+  private static Item betterSurvival(String name) {
+    Item item = Item.getByNameOrId("mujmajnkraftsbettersurvival:" + name);
+    if (item == null) {
+      throw new IllegalStateException("BetterSurvival item missing: " + name);
+    }
+    return item;
+  }
+
+  private static long autoMeleeHits(List<Hit> hits) {
+    return hits.stream().filter(hit -> hit.fromAutoMelee).count();
   }
 
   /** Holds attack for the given number of ticks, then releases it. */
