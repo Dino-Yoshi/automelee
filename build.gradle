@@ -61,6 +61,8 @@ repositories {
 dependencies {
     compileOnly rfg.deobf(packJars)
 
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.4'
 }
 
 processResources {
@@ -78,4 +80,11 @@ spotless {
         target 'src/*/java/**/*.java'
         googleJavaFormat('1.35.0')
     }
+}
+
+test {
+    useJUnitPlatform()
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(8)
+    })
 }
