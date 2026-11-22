@@ -1,0 +1,12 @@
+[{
+  "modid": "automeleegametest",
+  "name": "Auto Melee Game Tests",
+  "version": "1.0",
+  "mcversion": "1.12.2",
+  "description": "Development-only in-game scenarios for Auto Melee.",
+  "authorList": [],
+  "credits": "",
+  "url": "",
+  "updateJSON": "",
+  "logoFile": ""
+}]

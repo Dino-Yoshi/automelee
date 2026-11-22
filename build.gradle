@@ -1,0 +1,126 @@
+import com.gtnewhorizons.retrofuturagradle.mcp.InjectTagsTask
+
+plugins {
+    id 'java'
+    id 'com.gtnewhorizons.retrofuturagradle' version '2.0.3'
+    id 'com.diffplug.spotless' version '8.5.1'
+}
+
+group = 'automelee'
+version = project.mod_version
+
+base {
+    archivesName = project.mod_id
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+        // Azul covers the most platforms for Java 8 toolchains, including macOS arm64
+        vendor = JvmVendorSpec.AZUL
+    }
+}
+
+// Pack jars that are only needed to compile against
+def findModsDir() {
+    if (project.mods_dir) {
+        return file(project.mods_dir)
+    }
+    def dir = projectDir
+    while (dir != null && !new File(dir, 'minecraft/mods').isDirectory()) {
+        dir = dir.parentFile
+    }
+    if (dir == null) {
+        throw new GradleException('No minecraft/mods folder found above the project. Set mods_dir in gradle.properties.')
+    }
+    return new File(dir, 'minecraft/mods')
+}
+
+def packJars = fileTree(dir: findModsDir(), include: ['RLCombat-*.jar', 'ReachFix-*.jar'])
+if (packJars.isEmpty()) {
+    throw new GradleException("RLCombat and ReachFix jars not found in ${findModsDir()}")
+}
+
+minecraft {
+    mcVersion = '1.12.2'
+    mcpMappingChannel = project.mapping_channel
+    mcpMappingVersion = project.mapping_version
+    username = 'Developer'
+    extraRunJvmArguments.add('-ea:automelee')
+    injectedTags.set([VERSION: project.version.toString()])
+}
+
+tasks.named('injectTags', InjectTagsTask).configure {
+    outputClassName.set('automelee.Tags')
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly rfg.deobf(packJars)
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.4'
+}
+
+processResources {
+    inputs.property('version', project.version)
+    filesMatching('mcmod.info') {
+        expand(
+                modid: project.mod_id,
+                mod_name: project.mod_name,
+                mod_version: project.version)
+    }
+}
+
+spotless {
+    java {
+        target 'src/*/java/**/*.java'
+        googleJavaFormat('1.35.0')
+    }
+}
+
+sourceSets {
+    gameTest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+    }
+}
+
+// Scenario suite for the in-game behavior. Needs a display, so it is kept out of build and check.
+tasks.register('runGameTests', JavaExec) {
+    group = 'verification'
+    description = 'Runs the in-game scenarios in a dev client and fails when one fails.'
+    dependsOn tasks.named('gameTestClasses')
+    dependsOn { tasks.named('runClient').get().dependsOn }
+    // The client classpath includes the launcher jar, which only this task builds.
+    dependsOn tasks.named('packageMcLauncher')
+    ignoreExitValue = false
+    def reportFile = layout.buildDirectory.file('game-tests/report.txt')
+    def gameDir = layout.projectDirectory.dir('run/game-tests')
+    doFirst {
+        def client = tasks.named('runClient').get()
+        gameDir.asFile.mkdirs()
+        reportFile.get().asFile.parentFile.mkdirs()
+        mainClass.set(client.mainClass.get())
+        classpath = client.classpath + sourceSets.gameTest.output
+        args = client.calculateArgs()
+        def props = client.systemProperties.collect { key, value -> "-D${key}=${value}" }
+        jvmArgs = client.calculateJvmArgs() + props + ["-Dautomelee.gameTestReport=${reportFile.get().asFile.absolutePath}"]
+        // -PgameTestOnly=<name,...> and -PgameTestRepeat=<n> narrow the run while chasing a failure
+        ['gameTestOnly', 'gameTestRepeat'].each { name ->
+            if (project.hasProperty(name)) {
+                jvmArgs "-Dautomelee.${name}=${project.property(name)}"
+            }
+        }
+        workingDir = gameDir.asFile
+    }
+}
+
+test {
+    useJUnitPlatform()
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(8)
+    })
+}
