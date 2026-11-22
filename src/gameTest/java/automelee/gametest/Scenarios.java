@@ -43,7 +43,10 @@ final class Scenarios {
         new Scenario("open inventory lands no hits until it closes", Scenarios::inventory),
         new Scenario("spectator mode lands no hits", Scenarios::spectator),
         new Scenario(
-            "holding use with a sword in the off-hand lands no hits", Scenarios::offhandUse));
+            "holding use with a sword in the off-hand lands no hits", Scenarios::offhandUse),
+        new Scenario(
+            "attack and use with swords in both hands keep full-strength hits",
+            Scenarios::dualSwordAttackAndUse));
   }
 
   private static String swordHold(Harness h) throws Exception {
@@ -284,6 +287,23 @@ final class Scenarios {
     int hits = h.hitsFrom(start).size();
     h.check(hits == 0, hits + " hits while holding use with a sword in the off-hand");
     return "0 hits in 5 s of holding use with a sword in the off-hand";
+  }
+
+  private static String dualSwordAttackAndUse(Harness h) throws Exception {
+    h.prepare(Items.IRON_SWORD);
+    h.giveOffhand(Items.IRON_SWORD);
+    h.spawnAimedPig();
+    int start = h.tick();
+    h.holdAttack(true);
+    h.holdUse(true);
+    h.awaitTicks(HOLD_TICKS);
+    h.holdUse(false);
+    h.holdAttack(false);
+    List<Hit> hits = h.hitsFrom(start);
+    h.check(hits.size() >= 3, "only " + hits.size() + " hits in 5 s");
+    float weakest = weakest(hits);
+    h.check(weakest >= FULL, "a hit landed at strength " + weakest);
+    return hits.size() + " hits in 5 s, weakest strength " + format(weakest);
   }
 
   /** Holds attack for the given number of ticks, then releases it. */
