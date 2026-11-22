@@ -13,6 +13,7 @@ public final class Snapshot {
   private final float cooledStrength;
   private final boolean targetPresent;
   private final boolean targetLivingAndNotSelf;
+  private final boolean clickSwingPlaying;
 
   private Snapshot(Builder b) {
     this.meleeItem = b.meleeItem;
@@ -25,6 +26,7 @@ public final class Snapshot {
     this.cooledStrength = b.cooledStrength;
     this.targetPresent = b.targetPresent;
     this.targetLivingAndNotSelf = b.targetLivingAndNotSelf;
+    this.clickSwingPlaying = b.clickSwingPlaying;
   }
 
   public static Builder builder() {
@@ -71,6 +73,10 @@ public final class Snapshot {
     return targetLivingAndNotSelf;
   }
 
+  boolean clickSwingPlaying() {
+    return clickSwingPlaying;
+  }
+
   public static final class Builder {
 
     private boolean meleeItem;
@@ -83,6 +89,7 @@ public final class Snapshot {
     private float cooledStrength;
     private boolean targetPresent;
     private boolean targetLivingAndNotSelf;
+    private boolean clickSwingPlaying;
 
     private Builder() {}
 
@@ -133,6 +140,11 @@ public final class Snapshot {
 
     public Builder targetLivingAndNotSelf(boolean value) {
       this.targetLivingAndNotSelf = value;
+      return this;
+    }
+
+    public Builder clickSwingPlaying(boolean value) {
+      this.clickSwingPlaying = value;
       return this;
     }
 

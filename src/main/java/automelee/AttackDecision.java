@@ -15,6 +15,7 @@ public final class AttackDecision {
         && s.alive()
         && s.cooledStrength() >= 1.0F
         && s.targetPresent()
-        && s.targetLivingAndNotSelf();
+        && s.targetLivingAndNotSelf()
+        && !s.clickSwingPlaying();
   }
 }
