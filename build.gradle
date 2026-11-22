@@ -3,6 +3,7 @@ import com.gtnewhorizons.retrofuturagradle.mcp.InjectTagsTask
 plugins {
     id 'java'
     id 'com.gtnewhorizons.retrofuturagradle' version '2.0.3'
+    id 'com.diffplug.spotless' version '8.5.1'
 }
 
 group = 'automelee'
@@ -69,5 +70,12 @@ processResources {
                 modid: project.mod_id,
                 mod_name: project.mod_name,
                 mod_version: project.version)
+    }
+}
+
+spotless {
+    java {
+        target 'src/*/java/**/*.java'
+        googleJavaFormat('1.35.0')
     }
 }
