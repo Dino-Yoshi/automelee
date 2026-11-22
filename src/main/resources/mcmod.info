@@ -3,7 +3,7 @@
   "name": "${mod_name}",
   "version": "${mod_version}",
   "mcversion": "1.12.2",
-  "description": "Hold attack with a sword or axe to keep attacking the living target under the crosshair once the cooldown is full.",
+  "description": "Hold attack with a melee weapon to keep attacking the living target under the crosshair once the cooldown is full.",
   "authorList": [],
   "credits": "",
   "url": "",
