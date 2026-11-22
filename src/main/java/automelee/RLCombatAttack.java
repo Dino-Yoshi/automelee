@@ -1,5 +1,6 @@
 package automelee;
 
+import bettercombat.mod.client.handler.EventHandlersClient;
 import bettercombat.mod.network.PacketHandler;
 import bettercombat.mod.network.PacketMainhandAttack;
 import net.minecraft.entity.Entity;
@@ -16,9 +17,15 @@ final class RLCombatAttack {
   private RLCombatAttack() {}
 
   static void attack(EntityPlayer player, Entity target) {
+    Entity mover =
+        player.isRiding() && player.getRidingEntity() != null ? player.getRidingEntity() : player;
+    PacketHandler.instance.sendToServer(
+        new PacketMainhandAttack(
+            target.getEntityId(), mover.motionX, mover.motionY, mover.motionZ));
     player.attackTargetEntityWithCurrentItem(target);
     player.resetCooldown();
     player.swingArm(EnumHand.MAIN_HAND);
-    PacketHandler.instance.sendToServer(new PacketMainhandAttack(target.getEntityId()));
+    EventHandlersClient.resetMainhandAnimationCooldown(player.getCooldownPeriod());
+    EventHandlersClient.betterCombatMainhand.initiateAnimation();
   }
 }
