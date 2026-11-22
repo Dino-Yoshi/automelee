@@ -15,14 +15,10 @@ final class ReachFixTargets {
 
   private ReachFixTargets() {}
 
-  static Entity pointed(Minecraft mc, EntityPlayer player) {
+  static Entity pointed(Minecraft mc, EntityPlayer player, EnumHand hand) {
     RayTraceResult hit =
         EntityRendererHook.pointedObject(
-            mc.getRenderViewEntity(),
-            player,
-            EnumHand.MAIN_HAND,
-            mc.world,
-            mc.getRenderPartialTicks());
+            mc.getRenderViewEntity(), player, hand, mc.world, mc.getRenderPartialTicks());
     return hit != null && hit.typeOfHit == RayTraceResult.Type.ENTITY ? hit.entityHit : null;
   }
 }

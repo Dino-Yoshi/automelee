@@ -68,6 +68,11 @@ class AttackDecisionTest {
     assertFalse(AttackDecision.shouldAttack(attackable().alive(false).build()));
   }
 
+  @Test
+  void doesNotAttackWhileAClickSwingIsStillPlaying() {
+    assertFalse(AttackDecision.shouldAttack(attackable().clickSwingPlaying(true).build()));
+  }
+
   /** A snapshot where every rule would attack, so each test can break exactly one. */
   private static Snapshot.Builder attackable() {
     return Snapshot.builder()

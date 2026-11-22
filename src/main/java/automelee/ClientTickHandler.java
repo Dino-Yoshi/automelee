@@ -5,6 +5,7 @@ import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.EnumHand;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
@@ -22,24 +23,33 @@ public final class ClientTickHandler {
       return;
     }
 
-    Entity target = TargetFinder.find(mc, player);
-    Snapshot snapshot =
-        Snapshot.builder()
-            .meleeItem(MeleeItems.isMelee(player.getHeldItemMainhand().getItem()))
-            .attackKeyHeld(isHeld(mc.gameSettings.keyBindAttack))
-            .usingItem(player.isHandActive())
-            .rowing(player.isRowingBoat())
-            .guiOpen(mc.currentScreen != null)
-            .spectator(player.isSpectator())
-            .alive(player.isEntityAlive())
-            .cooledStrength(player.getCooledAttackStrength(0.5F))
-            .targetPresent(target != null)
-            .targetLivingAndNotSelf(Targets.isValid(target, player))
-            .build();
+    attackWith(mc, player, EnumHand.MAIN_HAND);
+    // The off-hand step goes here, after the main hand.
+  }
 
+  private static void attackWith(Minecraft mc, EntityPlayerSP player, EnumHand hand) {
+    Entity target = TargetFinder.find(mc, player, hand);
+    Snapshot snapshot = snapshot(mc, player, hand, target);
     if (AttackDecision.shouldAttack(snapshot)) {
       AttackDispatcher.attack(mc, player, target);
     }
+  }
+
+  private static Snapshot snapshot(
+      Minecraft mc, EntityPlayerSP player, EnumHand hand, Entity target) {
+    return Snapshot.builder()
+        .meleeItem(MeleeItems.isMelee(player.getHeldItem(hand).getItem()))
+        .attackKeyHeld(isHeld(mc.gameSettings.keyBindAttack))
+        .usingItem(player.isHandActive())
+        .rowing(player.isRowingBoat())
+        .guiOpen(mc.currentScreen != null)
+        .spectator(player.isSpectator())
+        .alive(player.isEntityAlive())
+        .cooledStrength(player.getCooledAttackStrength(0.5F))
+        .targetPresent(target != null)
+        .targetLivingAndNotSelf(Targets.isValid(target, player))
+        .clickSwingPlaying(false)
+        .build();
   }
 
   /**
