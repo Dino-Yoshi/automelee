@@ -61,6 +61,10 @@ repositories {
 dependencies {
     compileOnly rfg.deobf(packJars)
 
+    // BetterSurvival is for tests and the dev client only. ReachFix is its dependency.
+    testImplementation rfg.deobf(fileTree(dir: findModsDir(), include: ['better_survival-*.jar']))
+    runtimeOnly rfg.deobf(fileTree(dir: findModsDir(), include: ['better_survival-*.jar', 'ReachFix-*.jar']))
+
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.4'
 }

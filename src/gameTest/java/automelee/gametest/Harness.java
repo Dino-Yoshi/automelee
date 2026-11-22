@@ -506,6 +506,10 @@ final class Harness {
     return onClient(() -> Minecraft.getMinecraft().currentScreen instanceof GuiInventory);
   }
 
+  Item heldItem() throws Exception {
+    return onClient(() -> Minecraft.getMinecraft().player.getHeldItemMainhand().getItem());
+  }
+
   // Helpers.
 
   private static int attackKey() {
