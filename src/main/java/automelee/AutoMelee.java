@@ -9,7 +9,8 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
     name = "Auto Melee",
     version = Tags.VERSION,
     clientSideOnly = true,
-    acceptableRemoteVersions = "*")
+    acceptableRemoteVersions = "*",
+    dependencies = "after:bettercombatmod;after:reachfix")
 public final class AutoMelee {
 
   @Mod.EventHandler
