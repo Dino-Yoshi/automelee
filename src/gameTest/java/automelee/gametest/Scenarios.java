@@ -260,6 +260,8 @@ final class Scenarios {
 
     h.setGameType(GameType.SPECTATOR);
     h.awaitSpectator(true);
+    // Spectators fly, so the player can drift after the switch; aim again before measuring.
+    h.lookAt(h.entityPosition(pig).add(0D, 0.5D, 0D));
     h.awaitAimAtEntity(pig);
     int start = h.tick();
     h.awaitTicks(HOLD_TICKS);
