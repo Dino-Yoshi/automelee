@@ -79,6 +79,11 @@ processResources {
     }
 }
 
+// The LGPL text travels with the jar.
+jar {
+    from('COPYING', 'COPYING.LESSER')
+}
+
 spotless {
     java {
         target 'src/*/java/**/*.java'
