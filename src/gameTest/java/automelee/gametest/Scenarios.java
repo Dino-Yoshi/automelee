@@ -79,8 +79,9 @@ final class Scenarios {
     h.awaitAimAtEntity(frame);
     int start = h.tick();
     holdFor(h, HOLD_TICKS);
-    int frameHits = h.hitsFrom(start).size();
-    h.check(frameHits == 0, "item frame was attacked " + frameHits + " times");
+    List<Hit> frameHits = h.hitsFrom(start);
+    h.check(
+        frameHits.isEmpty(), "attacked " + targets(frameHits) + " while aiming at the item frame");
     h.check(h.isAlive(frame), "item frame is gone");
 
     h.prepare(Items.IRON_SWORD);
@@ -89,8 +90,9 @@ final class Scenarios {
     h.awaitAimAtEntity(stand);
     start = h.tick();
     holdFor(h, HOLD_TICKS);
-    int standHits = h.hitsFrom(start).size();
-    h.check(standHits == 0, "armor stand was attacked " + standHits + " times");
+    List<Hit> standHits = h.hitsFrom(start);
+    h.check(
+        standHits.isEmpty(), "attacked " + targets(standHits) + " while aiming at the armor stand");
     h.check(h.isAlive(stand), "armor stand is gone");
     return "no hits on the item frame or the armor stand, both still present";
   }
@@ -177,5 +179,13 @@ final class Scenarios {
 
   private static String format(float value) {
     return String.format("%.2f", value);
+  }
+
+  private static String targets(List<Hit> hits) {
+    StringBuilder out = new StringBuilder();
+    for (Hit hit : hits) {
+      out.append(out.length() == 0 ? "" : ", ").append(hit.target).append(" @").append(hit.tick);
+    }
+    return out.toString();
   }
 }

@@ -25,7 +25,13 @@ final class AttackLog {
       return;
     }
     synchronized (hits) {
-      hits.add(new Hit(ticks.get(), player.getCooledAttackStrength(0.5F)));
+      hits.add(
+          new Hit(
+              ticks.get(),
+              player.getCooledAttackStrength(0.5F),
+              event.getTarget().getClass().getSimpleName()
+                  + "#"
+                  + event.getTarget().getEntityId()));
     }
   }
 
@@ -45,10 +51,12 @@ final class AttackLog {
   static final class Hit {
     final int tick;
     final float strength;
+    final String target;
 
-    Hit(int tick, float strength) {
+    Hit(int tick, float strength, String target) {
       this.tick = tick;
       this.strength = strength;
+      this.target = target;
     }
   }
 }
