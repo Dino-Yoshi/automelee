@@ -82,6 +82,34 @@ spotless {
     }
 }
 
+sourceSets {
+    gameTest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+    }
+}
+
+// Scenario suite for the in-game behavior. Needs a display, so it is kept out of build and check.
+tasks.register('runGameTests', JavaExec) {
+    group = 'verification'
+    description = 'Runs the in-game scenarios in a dev client and fails when one fails.'
+    dependsOn tasks.named('gameTestClasses')
+    dependsOn { tasks.named('runClient').get().dependsOn }
+    ignoreExitValue = false
+    def reportFile = layout.buildDirectory.file('game-tests/report.txt')
+    def gameDir = layout.projectDirectory.dir('run/game-tests')
+    doFirst {
+        def client = tasks.named('runClient').get()
+        gameDir.asFile.mkdirs()
+        reportFile.get().asFile.parentFile.mkdirs()
+        mainClass.set(client.mainClass.get())
+        classpath = client.classpath + sourceSets.gameTest.output
+        args = client.calculateArgs()
+        def props = client.systemProperties.collect { key, value -> "-D${key}=${value}" }
+        jvmArgs = client.calculateJvmArgs() + props + ["-Dautomelee.gameTestReport=${reportFile.get().asFile.absolutePath}"]
+        workingDir = gameDir.asFile
+    }
+}
+
 test {
     useJUnitPlatform()
     javaLauncher.set(javaToolchains.launcherFor {
